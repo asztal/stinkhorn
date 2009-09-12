@@ -402,7 +402,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::DebugInterpreter::cmdShowStacks(Thread& t, vector<string> const& args, string const& entire_args) {
-		StackStack& stack = t.topContext().stack();
+		StackStackT& stack = t.topContext().stack();
 
 		vector<std::size_t> sizes;
 		stack.getStackSizes(std::back_inserter(sizes));
@@ -415,7 +415,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::DebugInterpreter::cmdShowTopStack(Thread& t, vector<string> const& args, string const& entire_args) {
-		StackStack stack(t.topContext().stack());
+		StackStackT stack(t.topContext().stack());
 		stack.queueMode(true); //Pick bottom entries first :)
 
 		size_t size = stack.topStackSize();
@@ -431,7 +431,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::DebugInterpreter::cmdShowSecondStack(Thread& t, vector<string> const& args, string const& entire_args) {
-		StackStack stack(t.topContext().stack());
+		StackStackT stack(t.topContext().stack());
 		stack.queueMode(true); //Pick bottom entries first :)
 
 		if(stack.stackCount() == 1)
@@ -451,7 +451,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::DebugInterpreter::cmdShowStringFromToss(Thread& t, const vector<string>& args, string const& entire_args) {
-		StackStack stack(t.topContext().stack());
+		StackStackT stack(t.topContext().stack());
 		
 		String s;
 		stack.readString(s);

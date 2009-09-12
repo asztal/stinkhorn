@@ -1,5 +1,6 @@
 #include "fingerprint.hpp"
 #include "context.hpp"
+#include <climits>
 
 //Go with whatever CCBI does, since I don't know the exact definitions of these.
 namespace {
@@ -15,7 +16,7 @@ namespace {
 namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::ModuFingerprint::handleInstruction(CellT instruction, Context& ctx) {
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 
 		switch(instruction) {
 			case 'M': 

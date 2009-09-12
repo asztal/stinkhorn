@@ -34,7 +34,7 @@ public:
 public:
 	bool execute(CellT c);
 
-	StackStack& stack() { return m_stack; }
+	StackStackT& stack() { return m_stack; }
 	Cursor& cursor() { return m_cursor; }
 	Tree& fungeSpace() { return m_funge_space; }
 
@@ -53,7 +53,7 @@ private:
 private:
 	FingerprintStack m_fp_stack;
 
-	StackStack m_stack;
+	StackStackT m_stack;
 	Tree& m_funge_space;
 	Cursor m_cursor;
 

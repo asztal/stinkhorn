@@ -26,7 +26,7 @@ namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::BoolFingerprint::handleInstruction(CellT instruction, Context& ctx) 
 	{
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 		switch(instruction) {
 			case 'A': stack.push(stack.pop() && stack.pop()); return true;
 			case 'N': stack.push(!stack.pop()); return true;
@@ -80,7 +80,7 @@ namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::SockFingerprint::handleInstruction(CellT instruction, Context& ctx) 
 	{
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 		Cursor& cr = ctx.cursor();
 		Vector storage_offset = ctx.storageOffset();
 
@@ -281,7 +281,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::StrnFingerprint::handleInstruction(CellT instruction, Context& ctx) {
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 		Cursor& cr = ctx.cursor();
 
 		switch(instruction) {

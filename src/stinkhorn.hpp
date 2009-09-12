@@ -30,7 +30,7 @@ namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	struct Stinkhorn {
 		typedef vector3<CellT> Vector;
-		typedef StackStack<CellT> StackStack;
+		typedef StackStack<CellT> StackStackT;
 		typedef typename unsigned_of<CellT>::type UCell;
 
 		typedef std::basic_string<CellT> String;

@@ -1,4 +1,5 @@
 #include "octree.hpp"
+#include <climits>
 #include <vector>
 
 namespace stinkhorn {

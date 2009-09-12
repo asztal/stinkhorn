@@ -5,6 +5,7 @@
 #include "octree.hpp"
 
 #include <fstream>
+#include <climits>
 #include <ctime>   //clock
 #include <cctype>  //isupper
 #include <cstring> //strstr
@@ -76,7 +77,7 @@ namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::Befunge93Fingerprint::handleInstruction(CellT instruction, Context& ctx) {
 		Cursor& cr = ctx.cursor();
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 
 		switch(instruction) {
 			case '@':
@@ -321,7 +322,7 @@ namespace stinkhorn {
 	bool Stinkhorn<CellT, Dimensions>::Befunge98Fingerprint::handleInstruction(CellT instruction, Context& ctx) {
 		bool failure = false;
 		Cursor& cr = ctx.cursor();
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 
 		switch(instruction) {
 			/* Now, I'm not entirely sure how # works in funge-98. The spec says:
@@ -794,7 +795,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	void Stinkhorn<CellT, Dimensions>::Befunge98Fingerprint::doInfo(int info, Context& ctx, bool all, size_t initial_top_stack_size) {
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 		Cursor& cr = ctx.cursor();
 
 		switch(info) {
@@ -1002,7 +1003,7 @@ namespace stinkhorn {
 	bool Stinkhorn<CellT, Dimensions>::TrefungeFingerprint::handleInstruction(CellT instruction, Context& ctx) {
 		bool failure = false;
 		Cursor& cr = ctx.cursor();
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 
 		switch(instruction) {
 			case 'h': cr.direction(Vector(0, 0, 1)); return true;
@@ -1042,7 +1043,7 @@ namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::RomaFingerprint::handleInstruction(CellT instruction, Context& ctx) {
 		if(isupper(static_cast<int>(instruction))) { //cast: doesn't matter
-			StackStack& stack = ctx.stack();
+			StackStackT& stack = ctx.stack();
 
 			switch(instruction) {
 				case 'C':

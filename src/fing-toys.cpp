@@ -112,7 +112,7 @@ namespace stinkhorn {
 	//Left to implement: J, O
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::ToysFingerprint::handleInstruction(CellT instruction, Context& ctx) {
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 		Cursor& cr = ctx.cursor();
 
 		switch(instruction) {

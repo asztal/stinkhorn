@@ -4,7 +4,7 @@
 namespace stinkhorn {
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::OrthFingerprint::handleInstruction(CellT instruction, Context& ctx) {
-		StackStack& stack = ctx.stack();
+		StackStackT& stack = ctx.stack();
 
 		switch(instruction) {
 			case 'A': 

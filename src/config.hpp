@@ -128,7 +128,7 @@ inline int64 abs(int64 a) {
 
 #define B98_MAJOR_VERSION 0
 #define B98_MINOR_VERSION 0
-#define B98_REVISION 53
+#define B98_REVISION 54
 
 #ifdef B98_NO_TREFUNGE
 # ifdef B98_NO_64BIT_CELLS

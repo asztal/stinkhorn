@@ -7,6 +7,8 @@
 #include "fingerprint.hpp" //for TimerFingerprint
 
 #include <iostream>
+#include <climits>
+#include <cstdio>
 #include <cstdlib>
 #include <ctime>
 
