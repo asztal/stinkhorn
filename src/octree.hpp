@@ -12,9 +12,6 @@
 #include <deque>
 #include <map>
 
-#include "boost/shared_ptr.hpp"
-using boost::shared_ptr;
-
 #ifdef max
 #undef max
 #endif

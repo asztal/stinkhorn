@@ -67,6 +67,8 @@ namespace stinkhorn {
 		StackStack();
 		StackStack(StackStack<T> const& other);
 
+		StackStack<T>& operator=(const StackStack<T>& other);
+
 		void push(T value);
 		T pop();
 		VectorT popVector(int dimensions);
@@ -131,6 +133,15 @@ namespace stinkhorn {
 		values(other.values),
 		indices(other.indices)
 	{
+	}
+
+	template<class T>
+	StackStack<T>& StackStack<T>::operator=(const StackStack<T>& other) {
+		m_invert_mode = other.m_invert_mode;
+		m_queue_mode = other.m_queue_mode;
+		values = other.values;
+		indices = other.indices;
+		return *this;
 	}
 
 	template<class T>

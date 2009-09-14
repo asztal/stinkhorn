@@ -4,7 +4,7 @@
 	Version="9.00"
 	Name="Stinkhorn"
 	ProjectGUID="{10BA1728-FAA6-458F-83AD-5E16FE3BBB89}"
-	RootNamespace="bf98test"
+	RootNamespace="stinkhorn"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>

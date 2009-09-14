@@ -440,10 +440,7 @@ namespace stinkhorn {
 					Vector k_pos = cr.position();
 					Vector initial_dir = cr.direction();
 
-					//Possibly advance() depending on consensus
-					Vector instruction_pos = cr.position() + cr.direction();
 					CellT instruction = cr.get(cr.position() + cr.direction());
-
 					Cursor find_cursor(cr);
 
 					while(instruction == ' ' || instruction == ';') {
@@ -494,7 +491,12 @@ namespace stinkhorn {
 
 			case 't': 
 				{
-					failure = true;
+					if(ctx.owner().interpreter().isConcurrent()) {
+						ctx.owner().interpreter().spawnThread(cr.position(), -cr.direction(), ctx.storageOffset(), stack);
+						return true;
+					} else {
+						failure = true;
+					}
 					break;
 				}
 
@@ -801,7 +803,7 @@ namespace stinkhorn {
 		switch(info) {
 			case 1: 
 				{
-					stack.push(0x2 | 0x4);
+					stack.push(2 | 4 | (ctx.owner().interpreter().isConcurrent() ? 1 : 0));
 					return;
 				}
 
@@ -849,7 +851,7 @@ namespace stinkhorn {
 
 			case 8: 
 				{
-					stack.push(1);
+					stack.push(ctx.owner().threadID());
 					return;
 				}
 

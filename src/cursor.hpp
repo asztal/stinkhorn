@@ -53,7 +53,7 @@ namespace stinkhorn {
 		//cursor goes outside the current page, the proper advance_cursor method of
 		//octree is called, and the cursor caches the result. Returns false if there
 		//are no instructions found in the path of the cursor.
-		bool advance();
+		bool advance(bool follow_teleports = true);
 		bool jump();
 
 		//Teleports the cursor to the next ; in the funge-space. If one is not found, 
@@ -76,6 +76,10 @@ namespace stinkhorn {
 		//if this fails, the get method of octree is called.
 		CellT get(Vector const& location);
 		void put(Vector const& location, CellT value);
+
+	protected:
+		// Like the funge-space advance_cursor, but using page cache more cleverly.
+		bool advance_fast(const Vector& from, Vector& to, bool in_hyperspace);
 
 	private:
 

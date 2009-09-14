@@ -41,6 +41,7 @@ namespace stinkhorn {
 	Stinkhorn<CellT, Dimensions>::DebugInterpreter::DebugInterpreter(stinkhorn::Options& options)
 		: Interpreter(options) 
 	{
+		options.concurrent = false;
 		ticks_until_break = 0;
 		total_ticks = 0;
 		until_breakpoint_id = -1;
@@ -103,8 +104,7 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	void Stinkhorn<CellT, Dimensions>::DebugInterpreter::doRun() {
-		//Just one Thread for now.
-		std::auto_ptr<Thread> t (new Thread(*this, this->fungeSpace()));
+		std::auto_ptr<Thread> t (new Thread(*this, this->fungeSpace(), 1));
 
 		while(true) {
 			step(*t);
@@ -231,12 +231,12 @@ namespace stinkhorn {
 			HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
 			WORD attr = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
-			if((mode & 4) == 4) //Next to be executed is green
-				attr = FOREGROUND_RED | FOREGROUND_INTENSITY;
+			if((mode & 16) == 16) //Current cell (yellow)
+				attr = FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY;
+			else if((mode & 4) == 4) //Next to be executed (dark yellow)
+				attr = FOREGROUND_GREEN | FOREGROUND_RED;
 			else if((mode & 2) == 2) //IP Trail is purple
 				attr = FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_INTENSITY;
-			else if((mode & 1) == 1) //Crosshair is yellow
-				attr = FOREGROUND_GREEN | FOREGROUND_RED | FOREGROUND_INTENSITY;
 			
 			if((mode & 8) == 8) //Next to be executed is green
 				attr = ((attr & 0xF0) >> 8) | ((attr & 0xF) << 8);
@@ -530,11 +530,13 @@ namespace stinkhorn {
 
 				int mode = 0;
 				if(x == 0 || y == 0)
-					mode |= 1;
+					mode = 1;
 				if(count(last_positions.begin(), last_positions.end(), cr.position()) > 0)
 					mode |= 2;
 				if(hasNext && next == cr.position())
 					mode |= 4;
+				if(x == 0 && y == 0)
+					mode |= 16;
 				
 				if(mode)
 					setDisplayMode(mode);

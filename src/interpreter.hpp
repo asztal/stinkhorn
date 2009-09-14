@@ -28,15 +28,18 @@ public:
 
 	void run();
 
-	void getArguments(std::vector<std::string>& args);
-	char** environment();
+	void getArguments(std::vector<std::string>& args) const;
+	char** environment() const;
 
-	bool isBefunge93();
-	bool isTrefunge();
-	bool debug();
-	bool warnings();
+	void spawnThread(const Vector& position, const Vector& direction, const Vector& storageOffset, const StackStackT& stack);
 
-	std::vector<std::string> const& includeDirectories();
+	bool isBefunge93() const;
+	bool isTrefunge() const;
+	bool isConcurrent() const;
+	bool debug() const;
+	bool warnings() const;
+
+	std::vector<std::string> const& includeDirectories() const;
 	FingerprintRegistry& registry();
 
 protected:

@@ -1,7 +1,9 @@
 #include "cursor.hpp"
 #include "octree.hpp"
+#include <iostream>
 
 using stinkhorn::Stinkhorn;
+using namespace std;
 
 template<class CellT, int Dimensions>
 Stinkhorn<CellT, Dimensions>::Cursor::Cursor(Tree& tree) :
@@ -13,56 +15,68 @@ Stinkhorn<CellT, Dimensions>::Cursor::Cursor(Tree& tree) :
 	m_page = m_tree.find(m_page_address);
 }
 
-//TODO: move teleportation markers into this function and Tree::advance_cursor
+// When in hyperspace, the function looks for a semicolon to drop out of hyperspace.
+// When not in hyperspace, the function looks for any non-space cell.
 template<class CellT, int Dimensions>
-bool Stinkhorn<CellT, Dimensions>::Cursor::advance() {
-	Vector pos(m_position + m_direction);
+bool Stinkhorn<CellT, Dimensions>::Cursor::advance_fast(const Vector& from, Vector& to, bool in_hyperspace) {
+	Vector pos = from + m_direction;
+	PageT* page;
+	Vector page_address = pos >> PageT::bits;
+	if(page_address == m_page_address)
+		page = m_page;
+	else
+		page = m_tree.find(page_address);
 
-	//First, try just iterating through the current m_page, looking for instructions.
-	//It's probably faster to do this, especially for #.
-	if(m_page) {
-		while(pos >> PageT::bits == m_page_address) {
-			CellT c = m_page->get(pos & PageT::mask);
-			if(c != ' ') {
-				m_position = pos;
-				return true;
-			}
-
-			pos += m_direction;
-		}
-	}
-
-	//Try the next page before trying the (costly?) finding methods.
-	//This results in a small performance gain.
-	{
-		Vector oldPos = pos;
-		Vector nextPageAddress = pos >> PageT::bits;
-		PageT* nextPage = m_tree.find(nextPageAddress);
-
-		if(nextPage) {
-			while(pos >> PageT::bits == nextPageAddress) {
-				CellT c = nextPage->get(pos & PageT::mask);
-				if(c != ' ') {
-					//We must update all of these, because we have entered a new page.
-					m_position = pos;
-					m_page = nextPage;
-					m_page_address = nextPageAddress;
+	while(page) {
+		while(pos >> PageT::bits == page_address) {
+			CellT c = page->get(pos & PageT::mask);
+			if (in_hyperspace) {
+				if (c == ';') {
+					to = pos;
 					return true;
 				}
-
-				pos += m_direction;
+			} else {
+				if (c != ' ') {
+					to = pos;
+					return true;
+				}
 			}
+			pos += m_direction;
 		}
-		pos = oldPos;
+		
+		page_address = pos >> PageT::bits;
+		page = m_tree.find(page_address);
 	}
 
-	bool success = 
-		m_tree.advance_cursor(m_position, m_direction, pos, any_instruction);
+	// We've hit a gap in funge-space!
+	return m_tree.advance_cursor(from, m_direction, to, in_hyperspace ? teleport_instruction : any_instruction);
+}
 
-	if(success)
-		this->position(pos);
+template<class CellT, int Dimensions>
+bool Stinkhorn<CellT, Dimensions>::Cursor::advance(bool follow_teleports) {
+	Vector pos = m_position;
+	for(;;) {
+		bool s = advance_fast(pos, pos, false);
+		if (!s)
+			return false;
+		
+		position(pos);
+		CellT c = get(pos);
 
-	return success;
+		if (c != ' ' && c != ';')
+			return true;
+
+		if (c == ';') {
+			if (!follow_teleports)
+				return true;
+
+			Vector from = pos;
+			s = advance_fast(pos, pos, true);
+			if (!s)
+				pos = from;
+		}
+	}
+	return false;
 }
 
 template<class CellT, int Dimensions>

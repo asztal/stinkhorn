@@ -1,8 +1,10 @@
 #include "config.hpp"
 #include "octree.hpp"
 #include "interpreter.hpp"
+#include "context.hpp"
 #include "fingerprint.hpp"
 #include "thread.hpp"
+#include <list>
 #include <iostream>
 #include <iterator>
 #include <stdexcept>
@@ -27,10 +29,13 @@ namespace stinkhorn {
 		DefaultFingerprintSource default_source;
 
 		Options& options;
+		typename std::list<Thread*> threads;
+		CellT nextThreadID;
 
 		PrivateData(Options& options) 
 			: options(options)
 		{
+			nextThreadID = 1;
 			registry.addSource(&default_source);
 		}
 	};
@@ -48,6 +53,11 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	Stinkhorn<CellT, Dimensions>::Interpreter::~Interpreter() {
+		while(!self->threads.empty()) {
+			delete self->threads.front();
+			self->threads.pop_front();
+		}
+
 		delete self;
 	}
 
@@ -95,25 +105,49 @@ namespace stinkhorn {
 
 	template<class CellT, int Dimensions>
 	void Stinkhorn<CellT, Dimensions>::Interpreter::doRun() {
-		//Just one thread for now.
-		auto_ptr<Thread> t (new Thread(*this, self->tree));
-		while(t->advance())
-			;
+		self->threads.push_back(new Thread(*this, self->tree, self->nextThreadID++));
+		while(!self->threads.empty()) {
+			// This is only valid if the advance() operation doesn't remove the thread itself from the list.
+			typename std::list<Thread*>::const_iterator itr = self->threads.begin();
+			while(itr != self->threads.end()) {
+				if(!(*itr)->advance())
+					itr = self->threads.erase(itr);
+				else
+					itr++;
+			}
+		}
 	}
 
 	template<class CellT, int Dimensions>
-	vector<string> const& Stinkhorn<CellT, Dimensions>::Interpreter::includeDirectories() {
+	void Stinkhorn<CellT, Dimensions>::Interpreter::spawnThread(const Vector& pos, const Vector& dir, const Vector& storageOffset, const StackStackT& stack) {
+		Thread* thread = new Thread(*this, self->tree, self->nextThreadID++);
+		thread->topContext().cursor().position(pos);
+		thread->topContext().cursor().direction(dir);
+		thread->topContext().storageOffset(storageOffset);
+		thread->topContext().stack() = stack;
+		thread->topContext().cursor().advance();
+
+		self->threads.push_front(thread);
+	}
+
+	template<class CellT, int Dimensions>
+	vector<string> const& Stinkhorn<CellT, Dimensions>::Interpreter::includeDirectories() const {
 		return self->options.include;
 	}
 
 	template<class CellT, int Dimensions>
-	bool Stinkhorn<CellT, Dimensions>::Interpreter::isBefunge93() {
+	bool Stinkhorn<CellT, Dimensions>::Interpreter::isBefunge93() const {
 		return self->options.befunge93;
 	}
 
 	template<class CellT, int Dimensions>
-	bool Stinkhorn<CellT, Dimensions>::Interpreter::isTrefunge() {
+	bool Stinkhorn<CellT, Dimensions>::Interpreter::isTrefunge() const {
 		return self->options.trefunge;
+	}
+
+	template<class CellT, int Dimensions>
+	bool Stinkhorn<CellT, Dimensions>::Interpreter::isConcurrent() const {
+		return self->options.concurrent;
 	}
 
 	template<class CellT, int Dimensions>
@@ -122,22 +156,22 @@ namespace stinkhorn {
 	}
 
 	template<class CellT, int Dimensions>
-	void Stinkhorn<CellT, Dimensions>::Interpreter::getArguments(vector<string>& args) {
+	void Stinkhorn<CellT, Dimensions>::Interpreter::getArguments(vector<string>& args) const {
 		args.push_back(self->options.sourceFile);
 	}
 
 	template<class CellT, int Dimensions>
-	char** Stinkhorn<CellT, Dimensions>::Interpreter::environment() {
+	char** Stinkhorn<CellT, Dimensions>::Interpreter::environment() const {
 		return self->options.environment;
 	}
 
 	template<class CellT, int Dimensions>
-	bool Stinkhorn<CellT, Dimensions>::Interpreter::debug() {
+	bool Stinkhorn<CellT, Dimensions>::Interpreter::debug() const {
 		return self->options.debug;
 	}
 
 	template<class CellT, int Dimensions>
-	bool Stinkhorn<CellT, Dimensions>::Interpreter::warnings() {
+	bool Stinkhorn<CellT, Dimensions>::Interpreter::warnings() const {
 		return self->options.warnings;
 	}
 

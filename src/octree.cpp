@@ -1,6 +1,7 @@
 #include "octree.hpp"
 #include <climits>
 #include <vector>
+#include <algorithm>
 
 namespace stinkhorn {
 	template<class T, int D>

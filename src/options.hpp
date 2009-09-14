@@ -6,7 +6,7 @@
 
 namespace stinkhorn {
 	struct Options {
-		bool debug, warnings, befunge93, trefunge, shouldRun, showSourceLines;
+		bool debug, warnings, befunge93, trefunge, shouldRun, showSourceLines, concurrent;
 		int cellSize;
 		int runCount;
 
@@ -22,6 +22,7 @@ namespace stinkhorn {
 			environment = 0;
 			cellSize = 32;
 			runCount = 1;
+			concurrent = true;
 		}
 	};
 

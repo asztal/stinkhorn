@@ -17,8 +17,9 @@ namespace stinkhorn {
 	* Start the IP at (0, 0, 0) moving east.
 	*/
 	template<class CellT, int Dimensions>
-	Stinkhorn<CellT, Dimensions>::Thread::Thread(Interpreter& owner, Tree& funge_space)
+	Stinkhorn<CellT, Dimensions>::Thread::Thread(Interpreter& owner, Tree& funge_space, CellT threadID)
 		: owner(owner)
+		, m_threadID(threadID)
 	{
 		m_context = new Context(*this, 0, funge_space);
 
@@ -75,16 +76,14 @@ namespace stinkhorn {
 
 		Vector old_ip = cr.position();
 
-		if(cr.advance()) {
+		if(cr.advance(!m_context->stringMode())) {
 			//If we skipped over some spaces, make sure we account for them. Go
 			//backwards one step so that we take one tick longer.
-			if(cr.position() - cr.direction() != old_ip && m_context->stringMode()) {
+			if(m_context->stringMode() && cr.position() - cr.direction() != old_ip) {
 				m_context->space(true);
 				cr.position(cr.position() - cr.direction());
 				Vector v = cr.position();
 			}
-
-			//cerr << "Cursor is at: " << cr.position() << endl;
 		} else {
 			endl(cerr << "\n\n** COMMENCING INFINITE LOOP **");
 			while(1);
@@ -98,6 +97,11 @@ namespace stinkhorn {
 		assert(m_context);
 
 		return m_context->execute(c);
+	}
+
+	template<class CellT, int Dimensions>
+	CellT Stinkhorn<CellT, Dimensions>::Thread::threadID() const {
+		return m_threadID;
 	}
 
 	template<class CellT, int Dimensions>

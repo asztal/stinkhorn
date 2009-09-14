@@ -14,17 +14,21 @@ namespace stinkhorn {
 		: boost::noncopyable 
 	{
 	public:	    
-		Thread(Interpreter& owner, Tree& funge_space);
+		Thread(Interpreter& owner, Tree& funge_space, CellT threadID);
 		~Thread();
 
 		Interpreter& interpreter() const;
 
 		bool advance();
 		bool execute(CellT c);
+
+		CellT threadID() const;
 	    
 		std::vector<std::string> const& includeDirectories() const;
 		Context& topContext() const;
+
 	private:
+		CellT m_threadID;
 		Context* m_context;
 		Interpreter& owner;
 	};

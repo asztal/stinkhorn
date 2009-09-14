@@ -79,7 +79,10 @@ void stinkhorn::parseOptions(int argc, char* argv[], char** envp, Options& opts)
 					throw runtime_error("cell size: expected 16, 32 or 64");
 
 				std::cerr << "warning: --cell-size doesn't do anything yet\n";
-			} 
+			}
+		else
+			if(arg == "--no-concurrent" || arg == "-N")
+				opts.concurrent = false;
 		else 
 			if(arg == "--include-directory" || arg == "-I") {
 				if(!*++argv)
@@ -140,6 +143,7 @@ void showHelp() {
 		option("-v", "--version", "produce version message", false),
 		option("-w", "--warnings", "turn on warnings", false),
 		option("-93", "--befunge-93", "befunge-93 compatibility", false),
+		option("-N", "--no-concurrent", "disable concurrency", false),
 		option("-B", "--cell-size", "change the cell size (default 32)", true),
 		option("-3", "--trefunge", "use trefunge instead of befunge", false),
 		option("-S", "--source-line", "specifies the source code inline, instead of reading from a file. May be specified again to specify the next line of the source. Note: ^, <, > and \" must usually be escaped.", false),
@@ -298,7 +302,7 @@ void completeArg(string& arg) {
 	string list[] = {
 		"--debug", "--warnings", "--trefunge", "--befunge93", 
 		"--help", "--version", "--show-source-lines", "--include-directory", "--cell-size",
-		"--source-line", "--bench", "--benchn"
+		"--source-line", "--bench", "--benchn", "--no-concurrent"
 	};
 
 	//Can't really declare these inside the predicate
