@@ -42,6 +42,7 @@ public:
 	Context* parent() { return m_parent; }
 	Thread& owner() { return m_owner; }
 	Interpreter& interpreter() { return m_owner.interpreter(); }
+	const Options& options() { return interpreter().options(); }
 
 	bool pushFingerprint(IFingerprint* fp);
 	bool pushFingerprint(IdT id);

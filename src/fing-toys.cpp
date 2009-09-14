@@ -143,8 +143,8 @@ namespace stinkhorn {
 				return;
 			}
 
-			put.position(initial);
-			get.position(initial - movement_direction * magnitude);
+			put.position(initial + movement_direction * magnitude);
+			get.position(initial);
 		}
 
 		get.direction(-movement_direction);
@@ -162,9 +162,8 @@ namespace stinkhorn {
 			if(!gsucc) {
 				// No more cells to move. Clear the rest of the put cursor's line -- i.e. clear 
 				// those cells which the get cursor didn't clear.
-				do
-					put.put(' ');
 				while(put.advance(false, false));
+					put.put(' ');
 				break;
 			}
 

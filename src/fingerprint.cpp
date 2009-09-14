@@ -331,7 +331,6 @@ namespace stinkhorn {
 			* So I'm just going to advance, then advance again.
 			*/
 			case '#':
-				//cr.jump();
 				cr.position(cr.position() + cr.direction());
 				return true;
 
@@ -634,6 +633,11 @@ namespace stinkhorn {
 
 			case 'i':
 				{
+					if(ctx.options().sandbox) {
+						failure = true; 
+						break;
+					}
+
 					int tree_flags = 0, flags = 0;
 
 					string filename;
@@ -705,6 +709,11 @@ namespace stinkhorn {
 
 			case 'o':
 				{
+					if(ctx.options().sandbox) {
+						failure = true; 
+						break;
+					}
+
 					Vector location, size(0, 0, 0);
 					string filename;
 					int flags = 0, tree_flags = 0;
@@ -763,7 +772,7 @@ namespace stinkhorn {
 							break;    
 					}
 
-					bool b = ctx.fungeSpace().write_file_from(location + ctx.storageOffset(), location + size, stream, tree_flags);
+					bool b = ctx.fungeSpace().write_file_from(location + ctx.storageOffset(), location + ctx.storageOffset() + size, stream, tree_flags);
 					stream.close();
 					if(b)
 						return true;
@@ -771,10 +780,25 @@ namespace stinkhorn {
 					failure = true;
 				}
 
-				//This should probably be moved to cursor::advance
+			// This should be impossible, but I fear what could happen in the presence of self-modifying code.
+			// TODO: Teleporting like this will take a tick.
 			case ';': 
 				{
 					cr.teleport();
+					return true;
+				}
+
+			case '=':
+				{
+					if(ctx.options().sandbox) {
+						failure = true;
+						break;
+					}
+
+					std::string command;
+					stack.readString(command);
+					int rv = system(command.c_str());
+					stack.push(rv);
 					return true;
 				}
 
@@ -788,7 +812,7 @@ namespace stinkhorn {
 		}
 
 		if(failure) {
-			cr.direction(-cr.direction());
+			cr.reflect();
 			return true;
 		}
 
@@ -803,7 +827,11 @@ namespace stinkhorn {
 		switch(info) {
 			case 1: 
 				{
-					stack.push(2 | 4 | (ctx.owner().interpreter().isConcurrent() ? 1 : 0));
+					int conc = ctx.owner().interpreter().isConcurrent() ? 1 : 0;
+					if(ctx.options().sandbox)
+						stack.push(conc);
+					else
+						stack.push(conc | 2 | 4 | 8);
 					return;
 				}
 
@@ -827,9 +855,12 @@ namespace stinkhorn {
 					return;
 				}
 
-			case 5: 
+			case 5:
 				{
-					stack.push(0);
+					if(ctx.options().sandbox)
+						stack.push(0); // Unavailable
+					else
+						stack.push(1); // Uses system()
 					return;
 				}
 

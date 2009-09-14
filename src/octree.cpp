@@ -527,13 +527,12 @@ namespace stinkhorn {
 		Vector r, r0;
 		r0 = from & PageT::mask;
 		r = r0;
-		bool is2d = false;
 	    
 		Vector to = original_to;
-		if(to.z == from.z) {
+		if(to.z == from.z)
 			to.z++;
-			is2d = true;
-		}
+		
+		bool is2d = to.z - from.z <= 1;
 	    
 		std::string spaces;
 		std::deque<PageT*> pages;

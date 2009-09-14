@@ -446,14 +446,14 @@ namespace stinkhorn {
 	}
 
 	/**
-	Reads a string from the top stack into out.
-
-	The following snippet pushes the string "Beyond Daylight" onto the stack:
-	0"thgilyaD dnoyeB"
-
-	That is, the characters of the string are pushed on last character first.
-	Strings on the stack use null-terminators to indicate the end of the string.
-	**/
+	 * Reads a string from the top stack into out.
+	 *
+	 * The following snippet pushes the string "Goodbye, World!" onto the stack:
+	 *   0"!dlroW ,eybdooG"
+	 *
+	 * That is, the characters of the string are pushed on last character first.
+	 * Strings on the stack use null-terminators to indicate the end of the string.
+	 */
 	//TODO: Handle queue mode/insert mode
 	template<class T>
 	template<class U>

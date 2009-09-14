@@ -181,6 +181,11 @@ namespace stinkhorn {
 	{
 		return self->registry;
 	}
+
+	template<class CellT, int Dimensions>
+	const Options& Stinkhorn<CellT, Dimensions>::Interpreter::options() const {
+		return self->options;
+	}
 }
 
 INSTANTIATE(class, Interpreter);

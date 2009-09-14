@@ -83,6 +83,9 @@ void stinkhorn::parseOptions(int argc, char* argv[], char** envp, Options& opts)
 		else
 			if(arg == "--no-concurrent" || arg == "-N")
 				opts.concurrent = false;
+		else
+			if(arg == "--sandbox" || arg == "-s")
+				opts.sandbox = true;
 		else 
 			if(arg == "--include-directory" || arg == "-I") {
 				if(!*++argv)
@@ -131,7 +134,7 @@ void showHelp() {
 
 	struct option {
 		string short_name, long_name, desc;
-		bool arg; //whether or not the argument takes a little baby argument of its own
+		bool arg;
 
 		option(string short_name, string long_name, string desc, bool arg) : 
 			short_name(short_name), long_name(long_name), desc(desc), arg(arg)
@@ -144,6 +147,7 @@ void showHelp() {
 		option("-w", "--warnings", "turn on warnings", false),
 		option("-93", "--befunge-93", "befunge-93 compatibility", false),
 		option("-N", "--no-concurrent", "disable concurrency", false),
+		option("-s", "--sandbox", "disable system execution and file/network I/O", false),
 		option("-B", "--cell-size", "change the cell size (default 32)", true),
 		option("-3", "--trefunge", "use trefunge instead of befunge", false),
 		option("-S", "--source-line", "specifies the source code inline, instead of reading from a file. May be specified again to specify the next line of the source. Note: ^, <, > and \" must usually be escaped.", false),
@@ -302,7 +306,7 @@ void completeArg(string& arg) {
 	string list[] = {
 		"--debug", "--warnings", "--trefunge", "--befunge93", 
 		"--help", "--version", "--show-source-lines", "--include-directory", "--cell-size",
-		"--source-line", "--bench", "--benchn", "--no-concurrent"
+		"--source-line", "--bench", "--benchn", "--no-concurrent", "--sandbox"
 	};
 
 	//Can't really declare these inside the predicate

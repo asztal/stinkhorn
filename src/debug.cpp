@@ -573,7 +573,7 @@ namespace stinkhorn {
 		stream.exceptions(std::ios::badbit);
 		Vector min, max;
 		fungeSpace().get_minmax(min, max);
-		fungeSpace().write_file_from(min, max + Vector(1, 1, 1) /*exclusive*/, stream, 1); //Linear mode: don't write unnecessary spaces
+		fungeSpace().write_file_from(min, max + Vector(1, 1, 1) /*exclusive*/, stream, 0); //Linear mode: don't write unnecessary spaces
 		stream.close();
 		cerr << "dumped funge space to " << filename << '\n';
 

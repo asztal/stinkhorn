@@ -6,7 +6,7 @@
 
 namespace stinkhorn {
 	struct Options {
-		bool debug, warnings, befunge93, trefunge, shouldRun, showSourceLines, concurrent;
+		bool debug, warnings, befunge93, trefunge, shouldRun, showSourceLines, concurrent, sandbox, environmentSorted;
 		int cellSize;
 		int runCount;
 
@@ -18,11 +18,12 @@ namespace stinkhorn {
 		char** environment;
 
 		Options() {
-			debug = warnings = befunge93 = trefunge = shouldRun = showSourceLines = false;
+			debug = warnings = befunge93 = trefunge = shouldRun = showSourceLines = sandbox = false;
+			environmentSorted = false;
+			concurrent = true;
 			environment = 0;
 			cellSize = 32;
 			runCount = 1;
-			concurrent = true;
 		}
 	};
 

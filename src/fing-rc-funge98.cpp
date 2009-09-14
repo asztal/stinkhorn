@@ -87,6 +87,11 @@ namespace stinkhorn {
 		switch(instruction) {
 			case 'A':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				sockaddr_in addr = {0};
 				socklen_t addrlen = sizeof(addr);
@@ -103,6 +108,11 @@ namespace stinkhorn {
 
 			case 'B': case 'C':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				sockaddr_in addr = {0};
 				CellT family, port, address = stack.pop();			
 				
@@ -154,6 +164,11 @@ namespace stinkhorn {
 
 			case 'K':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				int rv = 
 #ifdef B98_WINDOWS
@@ -168,6 +183,11 @@ namespace stinkhorn {
 
 			case 'L':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				int backlog = stack.pop();
 				if(0 != ::listen(socket, static_cast<int>(backlog)))
@@ -177,6 +197,11 @@ namespace stinkhorn {
 
 			case 'O':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				int option = static_cast<int>(stack.pop());
 				int value = static_cast<int>(stack.pop());
@@ -197,6 +222,11 @@ namespace stinkhorn {
 
 			case 'R':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				int length = static_cast<int>(stack.pop());
 				Vector to = stack.popVector(Dimensions) + storage_offset;
@@ -223,6 +253,11 @@ namespace stinkhorn {
 
 			case 'S':
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				int protocol = static_cast<int>(stack.pop());
 				int type = static_cast<int>(stack.pop());
 				int pf = static_cast<int>(stack.pop());
@@ -249,6 +284,11 @@ namespace stinkhorn {
 
 			case 'W': 
 			{
+				if (ctx.options().sandbox) {
+					cr.reflect();
+					return true;
+				}
+
 				SOCKET socket = socketFromCell(stack.pop());
 				int length = static_cast<int>(stack.pop());
 				Vector from = stack.popVector(Dimensions) + storage_offset;

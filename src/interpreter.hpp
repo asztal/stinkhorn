@@ -39,6 +39,8 @@ public:
 	bool debug() const;
 	bool warnings() const;
 
+	const Options& options() const;
+
 	std::vector<std::string> const& includeDirectories() const;
 	FingerprintRegistry& registry();
 
