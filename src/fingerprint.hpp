@@ -201,6 +201,7 @@ namespace stinkhorn {
 
 		void copy(Context& ctx, bool low_order, bool erase);
 		void chicane(Context& ctx);
+		void move_line(Context& ctx, const Vector& movement_direction, CellT magnitude);
 	};
 
 	template<class CellT, int Dimensions>

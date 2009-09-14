@@ -19,6 +19,10 @@ namespace stinkhorn {
 		vector3<T> operator-() const {
 			return vector3<T>(-x,-y,-z);
 		}
+
+		friend T dot(vector3<T> const& lhs, vector3<T> const& rhs) {
+			return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * lhs.z;
+		}
 	};
 
 	template<class T>

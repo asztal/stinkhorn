@@ -1,6 +1,7 @@
 #include "fingerprint.hpp"
 #include "cursor.hpp"
 #include "context.hpp"
+#include "octree.hpp"
 
 #include <cstddef>
 
@@ -109,7 +110,79 @@ namespace stinkhorn {
 		}
 	}
 
-	//Left to implement: J, O
+	// There are two cursors, the get cursor and the put cursor.  They travel from one 
+	// side of the funge-space to the other, with the put cursor lagging behind the get cursor 
+	// somewhat.
+	// If the cells are to be moved eastwards, we start at the most eastwards position and go west,
+	// moving cells eastwards until we run out of cells.
+	template<class CellT, int Dimensions>
+	void Stinkhorn<CellT, Dimensions>::ToysFingerprint::move_line(Context& ctx, const Vector& movement_direction, CellT magnitude) {
+		if (magnitude == 0)
+			return;
+
+		Cursor get(ctx.cursor()), put(ctx.cursor());
+
+		// Figure out where to start.
+		{
+			Vector min, max;
+			ctx.fungeSpace().get_minmax(min, max);
+			Vector initial = ctx.cursor().position();
+
+			// It is assumed that the movement direction is cardinal and normalized.
+			if(movement_direction.x) {
+				initial.x = movement_direction.x > 0 ? max.x : min.x;
+			} else if(movement_direction.y) {
+				initial.y = movement_direction.y > 0 ? max.y : min.y;
+			} else if(movement_direction.z) {
+				initial.z = movement_direction.z > 0 ? max.z : min.z;
+			} else {
+				if(ctx.interpreter().warnings()) {
+					std::cerr << "TOYS: J or O instruction passed invalid movement direction " << movement_direction << std::endl;
+				}
+				ctx.cursor().reflect();
+				return;
+			}
+
+			put.position(initial);
+			get.position(initial - movement_direction * magnitude);
+		}
+
+		get.direction(-movement_direction);
+		put.direction(-movement_direction);
+
+		while(true) {
+			put.put(get.currentCharacter());
+
+			CellT gx0 = dot(get.position(), movement_direction);
+			bool gsucc = get.advance(false, false);
+			CellT gx1 = dot(get.position(), movement_direction);
+		
+			CellT px0 = dot(put.position(), movement_direction), px1 = px0;
+
+			if(!gsucc) {
+				// No more cells to move. Clear the rest of the put cursor's line -- i.e. clear 
+				// those cells which the get cursor didn't clear.
+				do
+					put.put(' ');
+				while(put.advance(false, false));
+				break;
+			}
+
+			// If the put cursor didn't travel as far as the get cursor, we have to erase the things
+			// it lands on until it catches up.
+			while(abs(px1 - px0) < abs(gx1 - gx0)) {
+				if(px1 != px0) // Don't overwrite the non-space character we've just written.
+					put.put(' ');
+				bool psucc = put.advance(false, false);
+				if(!psucc)
+					break;
+				px1 = dot(put.position(), movement_direction);
+			}
+
+			put.position(get.position() + movement_direction * magnitude);
+		}
+	}
+
 	template<class CellT, int Dimensions>
 	bool Stinkhorn<CellT, Dimensions>::ToysFingerprint::handleInstruction(CellT instruction, Context& ctx) {
 		StackStackT& stack = ctx.stack();
@@ -338,11 +411,16 @@ namespace stinkhorn {
 					cr.reflect();
 				return true;
 
-			case 'O': case 'J':
-				if(ctx.owner().interpreter().warnings())
-					std::cerr << "Warning: Instruction '" << char(instruction) << "' is not yet implemented" << std::endl;
-				cr.reflect();
-				return true;
+			case 'O': case 'J': 
+				{
+					CellT delta = stack.pop();
+					if (delta == 0)
+						return true;
+
+					CellT d = delta > 0 ? 1 : -1;
+					move_line(ctx, instruction == 'O' ? Vector(d, 0, 0) : Vector(0, d, 0), abs(delta));
+					return true;
+				}
 		}
 
 		return false;

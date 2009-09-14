@@ -41,6 +41,7 @@ public:
 public:
 	Context* parent() { return m_parent; }
 	Thread& owner() { return m_owner; }
+	Interpreter& interpreter() { return m_owner.interpreter(); }
 
 	bool pushFingerprint(IFingerprint* fp);
 	bool pushFingerprint(IdT id);

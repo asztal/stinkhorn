@@ -1,9 +1,7 @@
 #include "cursor.hpp"
 #include "octree.hpp"
-#include <iostream>
 
 using stinkhorn::Stinkhorn;
-using namespace std;
 
 template<class CellT, int Dimensions>
 Stinkhorn<CellT, Dimensions>::Cursor::Cursor(Tree& tree) :
@@ -18,14 +16,17 @@ Stinkhorn<CellT, Dimensions>::Cursor::Cursor(Tree& tree) :
 // When in hyperspace, the function looks for a semicolon to drop out of hyperspace.
 // When not in hyperspace, the function looks for any non-space cell.
 template<class CellT, int Dimensions>
-bool Stinkhorn<CellT, Dimensions>::Cursor::advance_fast(const Vector& from, Vector& to, bool in_hyperspace) {
+bool Stinkhorn<CellT, Dimensions>::Cursor::advance_fast(const Vector& from, Vector& to, bool in_hyperspace, bool can_wrap) {
 	Vector pos = from + m_direction;
 	PageT* page;
 	Vector page_address = pos >> PageT::bits;
-	if(page_address == m_page_address)
+
+	if(page_address == m_page_address) {
+		getPage(); 
 		page = m_page;
-	else
+	} else {
 		page = m_tree.find(page_address);
+	}
 
 	while(page) {
 		while(pos >> PageT::bits == page_address) {
@@ -49,14 +50,14 @@ bool Stinkhorn<CellT, Dimensions>::Cursor::advance_fast(const Vector& from, Vect
 	}
 
 	// We've hit a gap in funge-space!
-	return m_tree.advance_cursor(from, m_direction, to, in_hyperspace ? teleport_instruction : any_instruction);
+	return m_tree.advance_cursor(from, m_direction, to, in_hyperspace ? teleport_instruction : any_instruction, can_wrap);
 }
 
 template<class CellT, int Dimensions>
-bool Stinkhorn<CellT, Dimensions>::Cursor::advance(bool follow_teleports) {
+bool Stinkhorn<CellT, Dimensions>::Cursor::advance(bool follow_teleports, bool can_wrap) {
 	Vector pos = m_position;
 	for(;;) {
-		bool s = advance_fast(pos, pos, false);
+		bool s = advance_fast(pos, pos, false, can_wrap);
 		if (!s)
 			return false;
 		
@@ -71,7 +72,7 @@ bool Stinkhorn<CellT, Dimensions>::Cursor::advance(bool follow_teleports) {
 				return true;
 
 			Vector from = pos;
-			s = advance_fast(pos, pos, true);
+			s = advance_fast(pos, pos, true, can_wrap);
 			if (!s)
 				pos = from;
 		}
@@ -92,31 +93,6 @@ void Stinkhorn<CellT, Dimensions>::Cursor::position(Vector const& new_position) 
 }
 
 template<class CellT, int Dimensions>
-bool Stinkhorn<CellT, Dimensions>::Cursor::jump() {
-	Vector pos;
-	bool can_advance_forwards = m_tree.advance_cursor(m_position, m_direction,
-		pos, any_instruction, false);
-
-	//We don't need the position it gave us. We only wanted to know if we 
-	//*could* advance forwards, not where we would advance to.
-	if(can_advance_forwards) {
-		m_position += m_direction;
-		return true;
-	} 
-
-	//This could be made faster, I mean, we've already search forwards
-	bool can_advance_at_all = m_tree.advance_cursor(m_position, m_direction,
-		pos, any_instruction, true);
-
-	if(!can_advance_at_all)
-		return false;
-
-	//Advance to the next instruction, which will be skipped over.
-	m_position = pos;
-	return true;
-}
-
-template<class CellT, int Dimensions>
 CellT Stinkhorn<CellT, Dimensions>::Cursor::get(Vector const& location) {   
 	if((location >> PageT::bits) == m_page_address) {
 		if(m_page) {
@@ -128,11 +104,20 @@ CellT Stinkhorn<CellT, Dimensions>::Cursor::get(Vector const& location) {
 }
 
 template<class CellT, int Dimensions>
+void Stinkhorn<CellT, Dimensions>::Cursor::put(CellT value) {
+	put(m_position, value);
+}
+
+template<class CellT, int Dimensions>
 void Stinkhorn<CellT, Dimensions>::Cursor::put(Vector const& location, CellT value) {
 	if((location >> PageT::bits) == m_page_address) {
+		getPage();
+
 		if(m_page) {
 			m_page->get(location & PageT::mask) = value;
 			m_tree.update_minmax(location);
+			return;
+		} else if (value == ' ') {
 			return;
 		}
 	}
@@ -142,10 +127,11 @@ void Stinkhorn<CellT, Dimensions>::Cursor::put(Vector const& location, CellT val
 
 template<class CellT, int Dimensions>
 CellT Stinkhorn<CellT, Dimensions>::Cursor::currentCharacter() {
+	getPage();
 	if(m_page)
 		return m_page->get(m_position & PageT::mask);
 	else
-		return m_tree.get(m_position);
+		return ' ';
 }
 
 template<class CellT, int Dimensions>
@@ -178,6 +164,12 @@ template<class CellT, int Dimensions>
 stinkhorn::vector3<CellT> Stinkhorn<CellT, Dimensions>::Cursor::rightwards90Z() {
 	Vector d = direction();
 	return Vector(-d.y, d.x, 0);
+}
+
+template<class CellT, int Dimensions>
+void Stinkhorn<CellT, Dimensions>::Cursor::getPage() {
+	if(!m_page)
+		m_page = m_tree.find(m_page_address);
 }
 
 INSTANTIATE(class, Cursor);
