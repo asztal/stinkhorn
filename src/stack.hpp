@@ -1,12 +1,4 @@
 /**
-All code in this file is copyright (c) 2006 Lee Houghton <lee at chunkybacon
-dot org>.
-
-Permission is granted to republish this work on the condition that the above
-copyright message and this message remain included unchanged in all copies.
-
-* * *
-
 Some of the documentation in this file (paragraphs marked by ~) is taken
 from the Funge-98 technical specification by Chris Pressey, which is subject
 to the following license terms:
@@ -30,13 +22,597 @@ http://catseye.mine.nu:8080/projects/funge98/doc/funge98.html
 #include <vector>
 #include <iterator>
 #include <algorithm>
-
-#ifndef B98_NO_STACK_POOL
-#define NOMINMAX //Sigh, boost includes windows.h
-#include <boost/pool/pool_alloc.hpp>
-#endif
+#include <list>
+#include <cassert>
 
 namespace stinkhorn {
+	namespace detail {
+		template <typename T>
+		class Deque {
+			static const int ChunkSizeElems = 4096 / sizeof(T);
+
+		public:
+			typedef T value_type;
+			typedef T& reference;
+			typedef T* pointer;
+			typedef T const& const_reference;
+			typedef T const* const_pointer;
+			typedef std::size_t size_type;
+			typedef std::ptrdiff_t difference_type;
+
+		private:
+			typedef std::deque<pointer> ChunkList;
+			ChunkList chunks;
+
+			size_type 
+				begin_, // Index into the first chunk of the first element. 
+				end_,   // Index into the last chunk of the last element, plus one.
+				        // As far as I understand it, if end_ == 0, it points into an
+						// as-yet unallocated chunk. Maybe. Fuck knows.
+				size_; // Amount of elements in the Deque.
+			
+		protected:
+			pointer get_chunk() { return new value_type[ChunkSizeElems]; }
+			void destroy_chunk(pointer chunk) { 
+				delete[] chunk; 
+			}
+
+			struct DequeIteratorBase 
+			{
+				friend class Deque<T>;
+
+				DequeIteratorBase(const DequeIteratorBase& other) 
+					: deque(other.deque), offset(other.offset), chunk(other.chunk), chunkIndex(other.chunkIndex)
+				{ }
+
+				void updateChunk() {
+					chunkIndex = offset / ChunkSizeElems;
+					chunk = deque.chunks.begin() + chunkIndex;
+					check_valid();
+				}
+
+				bool operator==(const DequeIteratorBase& other) const {
+					return offset == other.offset;
+				}
+
+				bool operator!=(const DequeIteratorBase& other) const {
+					return offset != other.offset;
+				}
+
+				bool operator>(const DequeIteratorBase& other) const {
+					return offset > other.offset;
+				}
+
+				bool operator<(const DequeIteratorBase& other) const {
+					return offset < other.offset;
+				}
+				
+				bool operator>=(const DequeIteratorBase& other) const {
+					return offset >= other.offset;
+				}
+
+				bool operator<=(const DequeIteratorBase& other) const {
+					return offset <= other.offset;
+				}
+
+				friend difference_type operator -(const DequeIteratorBase& x, const DequeIteratorBase& y) {
+					assert(&x.deque == &y.deque);
+					return x.offset - y.offset;
+				}
+
+			protected:
+				DequeIteratorBase(const Deque<T>& deque, size_type offset) 
+					: deque(deque), offset(offset)
+				{
+					updateChunk();
+				}
+
+				DequeIteratorBase(const Deque<T>& deque, size_type offset, typename ChunkList::const_iterator chunk, size_type chunkIndex) 
+					: deque(deque), offset(offset), chunk(chunk), chunkIndex(chunkIndex)
+				{
+					check_valid();
+				}
+
+				void advance(difference_type diff) {
+					size_type 
+						chunk0 = chunkIndex,
+						chunk1 = (offset + diff) / ChunkSizeElems;
+
+					chunk += chunk1 - chunk0;
+					chunkIndex += chunk1 - chunk0;
+					offset += diff;
+
+					check_valid();
+				}
+
+				// TODO: Does not validate that the cached chunk is actually part of the 
+				// Deque - removing and adding a chunk would cause an iterator to become invalid.
+				// (But this should be the case anyway.)
+				void check_valid() const {
+					assert(offset <= deque.size());
+
+					// Only non end() iterators need a valid chunk.
+					if(offset < deque.size()) {
+						assert(chunkIndex < deque.chunks.size());
+
+						// This is expensive!
+						assert(std::count(deque.chunks.begin(), deque.chunks.end(), *chunk) == 1);
+					}
+				}
+
+			protected:
+				const Deque<T>& deque;
+				typename ChunkList::const_iterator chunk;
+				size_type chunkIndex;
+				size_type offset;
+			};
+
+			struct DequeIterator 
+				: DequeIteratorBase
+				, std::iterator<std::random_access_iterator_tag, T, difference_type, pointer, reference>
+			{
+				friend class Deque<T>;
+
+				reference operator*() const {
+					check_valid();
+
+					return (*chunk)[offset % ChunkSizeElems];
+				}
+
+				DequeIterator& operator+=(difference_type diff) {
+					advance(diff);
+					return *this;
+				}
+
+				DequeIterator& operator-=(difference_type diff) {
+					return *this += -diff;
+				}
+
+				DequeIterator operator+(difference_type diff) const {
+					DequeIterator itr(*this);
+					return itr += diff;
+				}
+
+				DequeIterator operator+(size_type diff) const {
+					DequeIterator itr(*this);
+					return itr += diff;
+				}
+
+				DequeIterator operator-(difference_type diff) const {
+					DequeIterator itr(*this);
+					return itr += -diff;
+				}
+
+				/*difference_type operator-(const DequeIterator& other) const {
+					return difference_type(offset) - difference_type(other.offset);
+				}*/
+
+				DequeIterator& operator++() {
+					return *this += difference_type(1);
+				}
+
+				DequeIterator operator++(int) {
+					DequeIterator i(*this);
+					operator++();
+					return i;
+				}
+
+				DequeIterator& operator--() {
+					return *this -= difference_type(1);
+				}
+
+				DequeIterator operator--(int) {
+					DequeIterator i(*this);
+					operator--();
+					return i;
+				}
+
+			protected:
+				DequeIterator(Deque<T>& deque, size_type offset, typename ChunkList::const_iterator chunk, size_type chunkIndex) 
+					: DequeIteratorBase(deque, offset, chunk, chunkIndex)
+				{ }
+
+				DequeIterator(Deque<T>& deque, size_type offset)
+					: DequeIteratorBase(deque, offset)
+				{ }
+			};
+
+			struct ConstDequeIterator 
+				: DequeIteratorBase
+				, std::iterator<std::random_access_iterator_tag, T const, difference_type, const_pointer, const_reference>
+			{
+				friend class Deque<T>;
+
+				const_reference operator*() const {
+					return (*chunk)[offset % ChunkSizeElems];
+				}
+
+				ConstDequeIterator(const DequeIterator& itr)
+					: DequeIteratorBase(itr)
+				{ }
+
+				ConstDequeIterator& operator+=(difference_type diff) {
+					advance(diff);
+					return *this;
+				}
+
+				ConstDequeIterator& operator-=(difference_type diff) {
+					return *this += -diff;
+				}
+
+				ConstDequeIterator operator+(difference_type diff) const {
+					ConstDequeIterator itr(*this);
+					return itr += diff;
+				}
+
+				ConstDequeIterator operator+(size_type diff) const {
+					DequeIteratorBase itr(*this);
+					return itr += diff;
+				}
+
+				ConstDequeIterator operator-(difference_type diff) const {
+					ConstDequeIterator itr(*this);
+					return itr += -diff;
+				}
+
+				/*difference_type operator-(const ConstDequeIterator& other) const {
+					return difference_type(offset) - difference_type(other.offset);
+				}*/
+
+				ConstDequeIterator& operator++() {
+					return *this += difference_type(1);
+				}
+
+				ConstDequeIterator operator++(int) {
+					ConstDequeIterator i(*this);
+					operator++();
+					return i;
+				}
+
+				ConstDequeIterator& operator--() {
+					return *this -= difference_type(1);
+				}
+
+				ConstDequeIterator operator--(int) {
+					ConstDequeIterator i(*this);
+					operator--();
+					return i;
+				}
+
+			protected:
+				ConstDequeIterator(const Deque<T>& deque, size_type offset, typename ChunkList::const_iterator chunk, size_type chunkIndex) 
+					: DequeIteratorBase(deque, offset, chunk, chunkIndex)
+				{ }
+
+				ConstDequeIterator(const Deque<T>& deque, size_type offset)
+					: DequeIteratorBase(deque, offset)
+				{ }
+			};
+
+		public:
+			typedef DequeIterator iterator;
+			typedef ConstDequeIterator const_iterator;
+			typedef std::reverse_iterator<iterator> reverse_iterator;
+			typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+		public:
+			Deque() {
+				begin_ = 0;
+				end_ = 0;
+				size_ = 0;
+			}
+
+			Deque(const Deque& other) {
+				/*typename ChunkList::const_iterator
+					i = other.chunks.begin(),
+					e = other.chunks.end();
+
+				for (; i != e; ++i) {
+					pointer chunk = get_chunk();
+					std::copy(*i, *i + ChunkSizeElems, chunk);
+					chunks.push_back(chunk);
+				}
+
+				begin_ = other.begin_;
+				end_ = other.end_;
+				size_ = other.size_;
+
+				check_valid();*/
+
+				begin_ = end_ = size_ = 0;
+				std::copy(other.begin(), other.end(), std::back_inserter(*this));
+			}
+
+			Deque<T>& operator=(const Deque<T>& other) {
+				resize(other.size());
+				std::copy(other.begin(), other.end(), begin());
+				return *this;
+			}
+
+			~Deque() {
+				check_valid();
+
+				while (!chunks.empty()) {
+					destroy_chunk(chunks.back());
+					chunks.pop_back();
+				}
+			}
+
+			void push_front(T elem) {
+				check_valid();
+
+				if (begin_ == 0) {
+					chunks.push_front(get_chunk());
+					begin_ = ChunkSizeElems;
+				}
+
+				chunks.front()[begin_--] = elem;
+				size_++;
+
+				check_valid();
+			}
+
+			reference front() {
+				if (empty())
+					throw std::exception("front() called on an empty Deque");
+
+				return chunks.front()[begin_];
+			}
+
+			const_reference front() const {
+				if (empty())
+					throw std::exception("front() called on an empty Deque");
+
+				return chunks.front()[begin_];
+			}
+
+			void pop_front() {
+				check_valid();
+
+				if (empty())
+					throw std::exception("pop_front() called on an empty Deque");
+
+				if(++begin_ == ChunkSizeElems) {
+					begin_ = 0;
+					end_ -= ChunkSizeElems;
+
+					destroy_chunk(chunks.front());
+					chunks.pop_front();
+				}
+
+				size_--;
+				check_valid();
+			}
+
+			void push_back(T elem) {
+				check_valid();
+
+				if (end_ >= ChunkSizeElems) {
+					chunks.push_back(get_chunk());
+					chunks.back()[0] = elem;
+					end_ = 1;
+				} else if (chunks.empty()) {
+					chunks.push_back(get_chunk());
+					end_ = 1;
+					chunks.back()[0] = elem;
+				} else {
+					chunks.back()[end_++] = elem;
+				}
+
+				size_++;
+				check_valid();
+			}
+
+			reference back() {
+				if (empty())
+					throw std::exception("back() called on an empty Deque");
+
+				return chunks.back()[end_ - 1];
+			}
+
+			const_reference back() const { 
+				if (empty())
+					throw std::exception("back() called on an empty Deque");
+
+				return chunks.back()[end_ - 1];
+			}
+
+			void pop_back() {
+				check_valid();
+
+				if (end_ == 0) {
+					end_ = ChunkSizeElems - 1;
+					if (chunks.empty())
+						throw std::exception("pop_back() called on an empty Deque");
+					else {
+						destroy_chunk(chunks.back());
+						chunks.pop_back();
+					}
+				} else {
+					end_--;
+				}
+
+				size_--;
+				check_valid();
+			}
+
+			void swap(Deque<T>& other) {
+				std::swap(begin_, other.begin_);
+				std::swap(end_, other.end_);
+				std::swap(size_, other.size_);
+				chunks.swap(other.chunks);
+				
+				check_valid();
+			}
+
+			void clear() {
+				Deque().swap(*this);
+				check_valid();
+			}
+
+			void resize(size_type new_size) {
+				if (new_size == size_)
+					return;
+
+				if (new_size < size_) {
+					size_type chunksToRemove = (size_ - new_size) / ChunkSizeElems;
+					size_type elemsToRemove = (size_ - new_size) % ChunkSizeElems;
+
+					if (elemsToRemove > end_) {
+						chunksToRemove++;
+						end_ = end_ + ChunkSizeElems - elemsToRemove;
+					} else {
+						end_ -= elemsToRemove;
+					}
+
+					while(chunksToRemove --> 0) {
+						destroy_chunk(chunks.back());
+						chunks.pop_back();
+					}
+
+					size_ = new_size;
+				} else {
+					size_type old_size = size_;
+					size_type chunksToAdd = (new_size - size_) / ChunkSizeElems;
+					size_type elemsToAdd = (new_size - size_) % ChunkSizeElems;
+
+					end_ += elemsToAdd;
+					size_ = new_size;
+
+					size_type newChunkCount = (begin_ + size_ + ChunkSizeElems - 1) / ChunkSizeElems;
+					while(newChunkCount > chunks.size())
+						chunks.push_back(get_chunk());
+
+					check_valid();
+					std::fill(begin() + old_size, end(), value_type());
+				}
+
+				check_valid();		
+			}
+
+			void insert(const DequeIterator& itr, const_reference x) {
+				insert(itr, &x, &x + 1);
+			}
+
+			template<class InputIterator>
+			void insert(const DequeIterator& itr, InputIterator first, InputIterator last) {
+				check_valid();
+
+				size_type insertionCount = last - first;
+				size_type moveCount = end() - itr;
+
+				// Make room for the new elements.
+				resize(size_ + insertionCount);
+
+				// Move the elements after the insertion point.
+				std::copy_backward(itr, itr + moveCount, itr + insertionCount + moveCount);
+
+				// Insert the elements.
+				std::copy(first, last, itr);
+
+				check_valid();
+			}
+
+			iterator erase(iterator pos) {
+				return erase(pos, pos + 1);
+			}
+
+			iterator erase(iterator first, iterator last) {
+				check_valid();
+
+				size_type eraseCount = last - first;
+				size_type moveCount = end() - last;
+
+				// Move the elements after the erase point into the space where the erased elements are.
+				std::copy(last, last + moveCount, first);
+
+				// Remove the now-unused storage.
+				resize(size_ - eraseCount);
+
+				check_valid();
+				return first; // TODO: This should work...
+			}
+
+			reference operator[](size_type index) {
+				check_valid();
+
+				if(index > size_)
+					throw new std::exception("Index out of range in Deque::operator[]");
+
+				index += begin_;
+				pointer chunk = chunks[index / ChunkSizeElems];
+				return chunk[index % ChunkSizeElems];
+			}
+
+			const_reference operator[](size_type index) const {
+				check_valid();
+
+				if(index > size_)
+					throw new std::exception("Index out of range in Deque::operator[]");
+
+				index += begin_;
+				pointer chunk = chunks[index / ChunkSizeElems];
+				return chunk[index % ChunkSizeElems];
+			}
+
+			size_type size() const { return size_; }
+			bool empty() const { return size_ == 0; }
+
+			iterator begin() {
+				return iterator(*this, 0, chunks.begin(), 0);
+			}
+
+			iterator end() {
+				return iterator(*this, size_);
+			}
+
+			const_iterator begin() const {
+				return cbegin();
+			}
+
+			const_iterator end() const {
+				return cend();
+			}
+
+			reverse_iterator rbegin() {
+				return reverse_iterator(end());
+			}
+
+			reverse_iterator rend() {
+				return reverse_iterator(begin());
+			}
+
+			const_reverse_iterator rbegin() const {
+				return crbegin();
+			}
+
+			const_reverse_iterator rend() const {
+				return crend();
+			}
+
+		protected:
+			const_iterator cbegin() const {
+				return const_iterator(*this, 0, chunks.begin(), 0);
+			}
+
+			const_iterator cend() const {
+				return const_iterator(*this, size_);
+			}
+
+			const_reverse_iterator crbegin() const {
+				return const_reverse_iterator(cend());
+			}
+
+			const_reverse_iterator crend() const {
+				return const_reverse_iterator(cbegin());
+			}
+
+			void check_valid() const {
+				assert((end_ + ChunkSizeElems - begin_) % ChunkSizeElems == size_ % ChunkSizeElems);
+			}
+		};
+	}
+
 	/**
 	The stack stack transparently overlays the stack - that is to say, the top
 	stack of Funge-98's stack stack is treated the same as Befunge-93's sole
@@ -58,11 +634,7 @@ namespace stinkhorn {
 		typedef T CellT;
 		typedef vector3<T> VectorT;
 		typedef std::basic_string<CellT> String;
-#ifndef B98_NO_STACK_POOL
-		typedef std::deque<T, boost::pool_allocator<T, boost::default_user_allocator_new_delete, boost::details::pool::null_mutex> > StorageT;
-#else
-		typedef std::deque<T> StorageT;
-#endif
+		typedef detail::Deque<T> StorageT;
 
 		StackStack();
 		StackStack(StackStack<T> const& other);
@@ -528,7 +1100,7 @@ namespace stinkhorn {
 		} else {
 			if(values.size() == indices.top())
 				return CellT(); //TOSS is empty
-			typename StorageT::iterator itr = values.begin() + indices.top();
+			typename StorageT::iterator itr(values.begin() + indices.top());
 			CellT c = *itr;
 			values.erase(itr);
 			return c;

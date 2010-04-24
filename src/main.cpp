@@ -40,18 +40,45 @@ int main(int argc, char** argv, char** envp) {
 		for(int i = 0; opts.runCount == -1 ? (timer.elapsedTime() < 2000000) : i < opts.runCount; ++i) {
 			try { 
 				if(opts.debug) {
-					Stinkhorn<int32, 2>::DebugInterpreter program(opts);
-					program.run();
+#ifndef B98_NO_64BIT_CELLS
+					if(opts.cellSize == 64) 
+#ifndef B98_NO_TREFUNGE
+						if(trefunge)
+							Stinkhorn<int64, 3>::DebugInterpreter(opts).run();
+						else
+#endif
+							Stinkhorn<int64, 2>::DebugInterpreter(opts).run();
+					else
+#endif
+#ifndef B98_NO_TREFUNGE
+						if(trefunge)
+							Stinkhorn<int32, 3>::DebugInterpreter(opts).run();
+						else
+#endif
+							Stinkhorn<int32, 2>::DebugInterpreter(opts).run();
 				} else {
-					Stinkhorn<int32, 2>::Interpreter program(opts);
-					program.run();
+#ifndef B98_NO_64BIT_CELLS
+					if(opts.cellSize == 64) 
+#ifndef B98_NO_TREFUNGE
+						if(trefunge)
+							Stinkhorn<int64, 3>::Interpreter(opts).run();
+						else
+#endif
+							Stinkhorn<int64, 2>::Interpreter(opts).run();
+					else
+#endif
+#ifndef B98_NO_TREFUNGE
+						if(trefunge)
+							Stinkhorn<int32, 3>::Interpreter(opts).run();
+						else
+#endif
+							Stinkhorn<int32, 2>::Interpreter(opts).run();
 				}
 				++runCount;
 			} catch(QuitProgram&) {
 				++runCount;
-				if(opts.runCount == 1) {
+				if(opts.runCount == 1)
 					throw;
-				}
 			}
 		}
 	} catch (std::exception& e) {

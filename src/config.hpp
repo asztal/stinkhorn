@@ -163,9 +163,4 @@ inline int64 abs(int64 a) {
 #define _SCL_SECURE 1
 #endif
 
-//It seems this is REALLY slow in debug mode for some operations
-#ifdef DEBUG
-#define B98_NO_STACK_POOL
-#endif
-
 #endif
