@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CC="g++"
-CFLAGS="-c -O3"
+CFLAGS="-c -O3 -DNDEBUG -DB98_NO_64BIT_CELLS -DB98_NO_TREFUNGE"
 LDFLAGS=""
 SOURCES="src/context.cpp src/cursor.cpp src/debug.cpp src/fing-hrti.cpp\
  src/fing-modu.cpp src/fing-orth.cpp src/fing-rc-funge98.cpp\
