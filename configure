@@ -1,7 +1,7 @@
 #!/bin/sh
 
 CC="g++"
-CFLAGS="-c -Wall -O3"
+CFLAGS="-c -O3"
 LDFLAGS=""
 SOURCES="src/context.cpp src/cursor.cpp src/debug.cpp src/fing-hrti.cpp\
  src/fing-modu.cpp src/fing-orth.cpp src/fing-rc-funge98.cpp\
@@ -26,6 +26,11 @@ all: $(SOURCES) $(EXECUTABLE)
 clean:
 	rm -rf $(OBJECTS) $(EXECUTABLE)
 
+.PHONY: all clean
+
+.cpp.o:
+	$(CC) $(CFLAGS) $< -o $@
+
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 
@@ -35,8 +40,6 @@ for f in $SOURCES
 do
   echo "$f"
   g++ -MM $f >> Makefile
-  /bin/echo -e -n "\t" >> Makefile
-  /bin/echo '$(CC) $(CFLAGS) $< -o $@' >> Makefile
-  /bin/echo >> Makefile
+  /bin/echo -e "\t\n" >> Makefile
 done
 
