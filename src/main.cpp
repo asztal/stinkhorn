@@ -43,7 +43,7 @@ int main(int argc, char** argv, char** envp) {
 #ifndef B98_NO_64BIT_CELLS
 					if(opts.cellSize == 64) 
 #ifndef B98_NO_TREFUNGE
-						if(trefunge)
+						if(opts.trefunge)
 							Stinkhorn<int64, 3>::DebugInterpreter(opts).run();
 						else
 #endif
@@ -51,7 +51,7 @@ int main(int argc, char** argv, char** envp) {
 					else
 #endif
 #ifndef B98_NO_TREFUNGE
-						if(trefunge)
+						if(opts.trefunge)
 							Stinkhorn<int32, 3>::DebugInterpreter(opts).run();
 						else
 #endif
@@ -60,7 +60,7 @@ int main(int argc, char** argv, char** envp) {
 #ifndef B98_NO_64BIT_CELLS
 					if(opts.cellSize == 64) 
 #ifndef B98_NO_TREFUNGE
-						if(trefunge)
+						if(opts.trefunge)
 							Stinkhorn<int64, 3>::Interpreter(opts).run();
 						else
 #endif
@@ -68,7 +68,7 @@ int main(int argc, char** argv, char** envp) {
 					else
 #endif
 #ifndef B98_NO_TREFUNGE
-						if(trefunge)
+						if(opts.trefunge)
 							Stinkhorn<int32, 3>::Interpreter(opts).run();
 						else
 #endif

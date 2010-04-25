@@ -180,7 +180,7 @@ namespace stinkhorn {
 		}
 
 		assert(n->data);
-		assert(((uintptr_t)n->data) > 0x100);
+		assert(reinterpret_cast<uint64>(n->data) > 0x100);
 		//std::cerr << "  Returning 0x" << n->data << " for " << addr << "\n";
 		return n->data;
 	}

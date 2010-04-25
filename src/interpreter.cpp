@@ -108,7 +108,7 @@ namespace stinkhorn {
 		self->threads.push_back(new Thread(*this, self->tree, self->nextThreadID++));
 		while(!self->threads.empty()) {
 			// This is only valid if the advance() operation doesn't remove the thread itself from the list.
-			typename std::list<Thread*>::const_iterator itr = self->threads.begin();
+			typename std::list<Thread*>::iterator itr = self->threads.begin();
 			while(itr != self->threads.end()) {
 				if(!(*itr)->advance())
 					itr = self->threads.erase(itr);

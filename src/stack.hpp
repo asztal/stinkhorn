@@ -24,6 +24,7 @@ http://catseye.mine.nu:8080/projects/funge98/doc/funge98.html
 #include <algorithm>
 #include <list>
 #include <cassert>
+#include <stdexcept>
 
 namespace stinkhorn {
 	namespace detail {
@@ -156,11 +157,11 @@ namespace stinkhorn {
 				reference operator*() const {
 					check_valid();
 
-					return (*chunk)[offset % ChunkSizeElems];
+					return (*this->chunk)[this->offset % ChunkSizeElems];
 				}
 
 				DequeIterator& operator+=(difference_type diff) {
-					advance(diff);
+					this->advance(diff);
 					return *this;
 				}
 
@@ -182,10 +183,6 @@ namespace stinkhorn {
 					DequeIterator itr(*this);
 					return itr += -diff;
 				}
-
-				/*difference_type operator-(const DequeIterator& other) const {
-					return difference_type(offset) - difference_type(other.offset);
-				}*/
 
 				DequeIterator& operator++() {
 					return *this += difference_type(1);
@@ -224,7 +221,7 @@ namespace stinkhorn {
 				friend class Deque<T>;
 
 				const_reference operator*() const {
-					return (*chunk)[offset % ChunkSizeElems];
+					return (*this->chunk)[this->offset % ChunkSizeElems];
 				}
 
 				ConstDequeIterator(const DequeIterator& itr)
@@ -232,7 +229,7 @@ namespace stinkhorn {
 				{ }
 
 				ConstDequeIterator& operator+=(difference_type diff) {
-					advance(diff);
+					this->advance(diff);
 					return *this;
 				}
 
@@ -354,14 +351,14 @@ namespace stinkhorn {
 
 			reference front() {
 				if (empty())
-					throw std::exception("front() called on an empty Deque");
+					throw std::runtime_error("front() called on an empty Deque");
 
 				return chunks.front()[begin_];
 			}
 
 			const_reference front() const {
 				if (empty())
-					throw std::exception("front() called on an empty Deque");
+					throw std::runtime_error("front() called on an empty Deque");
 
 				return chunks.front()[begin_];
 			}
@@ -370,7 +367,7 @@ namespace stinkhorn {
 				check_valid();
 
 				if (empty())
-					throw std::exception("pop_front() called on an empty Deque");
+					throw std::runtime_error("pop_front() called on an empty Deque");
 
 				if(++begin_ == ChunkSizeElems) {
 					begin_ = 0;
@@ -405,14 +402,14 @@ namespace stinkhorn {
 
 			reference back() {
 				if (empty())
-					throw std::exception("back() called on an empty Deque");
+					throw std::runtime_error("back() called on an empty Deque");
 
 				return chunks.back()[end_ - 1];
 			}
 
 			const_reference back() const { 
 				if (empty())
-					throw std::exception("back() called on an empty Deque");
+					throw std::runtime_error("back() called on an empty Deque");
 
 				return chunks.back()[end_ - 1];
 			}
@@ -423,7 +420,7 @@ namespace stinkhorn {
 				if (end_ == 0) {
 					end_ = ChunkSizeElems - 1;
 					if (chunks.empty())
-						throw std::exception("pop_back() called on an empty Deque");
+						throw std::runtime_error("pop_back() called on an empty Deque");
 					else {
 						destroy_chunk(chunks.back());
 						chunks.pop_back();
@@ -537,7 +534,7 @@ namespace stinkhorn {
 				check_valid();
 
 				if(index > size_)
-					throw new std::exception("Index out of range in Deque::operator[]");
+					throw new std::runtime_error("Index out of range in Deque::operator[]");
 
 				index += begin_;
 				pointer chunk = chunks[index / ChunkSizeElems];
@@ -548,7 +545,7 @@ namespace stinkhorn {
 				check_valid();
 
 				if(index > size_)
-					throw new std::exception("Index out of range in Deque::operator[]");
+					throw new std::runtime_error("Index out of range in Deque::operator[]");
 
 				index += begin_;
 				pointer chunk = chunks[index / ChunkSizeElems];
