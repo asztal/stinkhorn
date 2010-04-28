@@ -1,45 +1,63 @@
-#!/bin/sh
+#!/bin/bash
 
 CC="g++"
-CFLAGS="-c -O3 -DNDEBUG -DB98_NO_64BIT_CELLS -DB98_NO_TREFUNGE"
+TEST_CFLAGS="-c -O3 -DB98_NO_64BIT_CELLS -DB98_NO_TREFUNGE"
+CFLAGS="$TEST_CFLAGS -DNDEBUG"
 LDFLAGS=""
 SOURCES="src/context.cpp src/cursor.cpp src/debug.cpp src/fing-hrti.cpp\
  src/fing-modu.cpp src/fing-orth.cpp src/fing-rc-funge98.cpp\
  src/fing-refc.cpp src/fing-toys.cpp src/fingerprint.cpp\
- src/fingerprint_stack.cpp src/interpreter.cpp src/main.cpp\
- src/octree.cpp src/options.cpp src/thread.cpp"
+ src/fingerprint_stack.cpp src/interpreter.cpp src/octree.cpp src/options.cpp\
+ src/thread.cpp"
+TEST_SOURCES="src/tests/main.cpp"
 EXECUTABLE=stinkhorn
+TEST_EXECUTABLE=stinkhorn_tests
 
 >Makefile cat <<END
 CC=$CC
 CFLAGS=$CFLAGS
+TEST_CFLAGS=$CFLAGS
 LDFLAGS=$LDFLAGS
 SOURCES=$SOURCES
+TEST_SOURCES=$TEST_SOURCES
 OBJECTS=\$(SOURCES:.cpp=.o)
+TEST_OBJECTS=\$(TEST_SOURCES:.cpp=.o)
 EXECUTABLE=$EXECUTABLE
+TEST_EXECUTABLE=$TEST_EXECUTABLE
 END
 
 >>Makefile cat <<"END"
 
-all: $(SOURCES) $(EXECUTABLE)
+all: src/main.cpp $(SOURCES) $(EXECUTABLE)
+
+test: src/tests/main.cpp $(SOURCES) $(TEST_SOURCES) $(TEST_EXECUTABLE)
+	@echo Running tests...
+	@src/tests/runall.sh
 
 clean:
-	rm -rf $(OBJECTS) $(EXECUTABLE)
+	rm -rf *.o myco*.tmp src/*.o src/tests/*.o $(EXECUTABLE) $(TEST_EXECUTABLE)
 
-.PHONY: all clean
+.PHONY: all clean test
 
-.cpp.o:
-	$(CC) $(CFLAGS) $< -o $@
+$(EXECUTABLE): src/main.o $(OBJECTS)
+	$(CC) $(LDFLAGS) src/main.o $(OBJECTS) -o $@
 
-$(EXECUTABLE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
+$(TEST_EXECUTABLE): $(TEST_OBJECTS) $(OBJECTS)
+	$(CC) $(LDFLAGS) $(TEST_OBJECTS) $(OBJECTS) -o $@
 
 END
 
-for f in $SOURCES
+for f in src/main.cpp $SOURCES
 do
   echo "$f"
-  g++ -MM $f >> Makefile
-  /bin/echo -e "\t\n" >> Makefile
+  g++ -MM -MT ${f/.cpp/.o} $f >> Makefile
+  /bin/echo -e "\t\$(CC) \$(CFLAGS) \$< -o \$@\n" >> Makefile
+done
+
+for f in $TEST_SOURCES
+do
+  echo "$f"
+  g++ -MM -MT ${f/.cpp/.o} $f >> Makefile
+  /bin/echo -e "\t\$(CC) \$(TEST_CFLAGS) \$< -o \$@\n" >> Makefile
 done
 

@@ -117,9 +117,6 @@ namespace stinkhorn {
 //you're using windows 3.1 or it breaks your program...
 //#define B98_WIN32_DONT_USE_QPC
 
-//Define this to not use boost::pool_allocator for the stack stack.
-//#define B98_NO_STACK_POOL
-
 #ifdef _MSC_VER
 inline int64 abs(int64 a) {
 	return a >= int64() ? a : -a;
